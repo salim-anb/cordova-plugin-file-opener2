@@ -101,7 +101,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			wasOpened = [docController presentPreviewAnimated: NO];
 		} else {
 			CDVViewController* cont = self.cdvViewController;
-			wasOpened = [docController presentOpenInMenuFromRect:rect inView:cont.view animated:YES];
+			wasOpened = [docController presentOpenInMenuFromRect:rect inView: [self getPresentedViewController].view animated:YES];
 		}
 
 		if(wasOpened) {
@@ -118,6 +118,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		}
 		[self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 	});
+}
+
+- (UIViewController *)getPresentedViewController
+{
+    UIViewController *appRootVC = [UIApplication sharedApplication].keyWindow.rootViewController;
+    UIViewController *topVC = appRootVC;
+    if (topVC.presentedViewController) {
+        topVC = topVC.presentedViewController;
+    }
+    return topVC;
 }
 
 @end
