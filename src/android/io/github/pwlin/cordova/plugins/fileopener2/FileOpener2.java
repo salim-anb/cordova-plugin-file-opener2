@@ -22,23 +22,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 package io.github.pwlin.cordova.plugins.fileopener2;
 
+import java.io.BufferedInputStream;
 import java.io.File;
-import java.util.List;
-
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
-
-import io.github.pwlin.cordova.plugins.fileopener2.FileProvider;
-
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -46,6 +49,8 @@ import org.apache.cordova.CordovaResourceApi;
 
 public class FileOpener2 extends CordovaPlugin {
 
+	private static final int FILE_SAVE_REQUEST_CODE = 1;
+	private String fileUrl;
 	/**
 	 * Executes the request and returns a boolean.
 	 *
@@ -58,6 +63,9 @@ public class FileOpener2 extends CordovaPlugin {
 	 * @return boolean.
 	 */
 	public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+
+		cordova.setActivityResultCallback(this);
+
 		if (action.equals("open")) {
 			String fileUrl = args.getString(0);
 			String contentType = args.getString(1);
@@ -66,6 +74,12 @@ public class FileOpener2 extends CordovaPlugin {
 				openWithDefault = args.getBoolean(2);
 			}
 			this._open(fileUrl, contentType, openWithDefault, callbackContext);
+		}
+		else if (action.equals("save")){
+			String fileUrl = args.getString(0);
+			String contentType = args.getString(1);
+
+			this._save(fileUrl, contentType, callbackContext);
 		}
 		else if (action.equals("uninstall")) {
 			this._uninstall(args.getString(0), callbackContext);
@@ -89,6 +103,16 @@ public class FileOpener2 extends CordovaPlugin {
 			callbackContext.error(errorObj);
 		}
 		return true;
+	}
+
+	private void _save(String fileUrl, String contentType, CallbackContext callbackContext) throws JSONException {
+
+		this.fileUrl = fileUrl;
+		Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+		intent.setType(contentType);
+		intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+
+		cordova.getActivity().startActivityForResult(intent, FILE_SAVE_REQUEST_CODE);
 	}
 
 	private void _open(String fileArg, String contentType, Boolean openWithDefault, CallbackContext callbackContext) throws JSONException {
@@ -127,7 +151,6 @@ public class FileOpener2 extends CordovaPlugin {
 					Uri path = FileProvider.getUriForFile(context, cordova.getActivity().getPackageName() + ".provider", file);
 					intent.setDataAndType(path, contentType);
 					intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-
 				}
 
 				/*
@@ -195,5 +218,70 @@ public class FileOpener2 extends CordovaPlugin {
         return appInstalled;
 	}
 
-}
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
 
+
+		if (resultCode != Activity.RESULT_OK)
+			return;
+
+		switch(requestCode) {
+			case FILE_SAVE_REQUEST_CODE:
+				if( data != null ) { ;
+					String localDir = data.getDataString();
+
+					new DownloadFileFromURL().execute(this.fileUrl, localDir);
+				}
+				break;
+		}
+
+	}
+
+	/**
+	 * Background Async Task to download file
+	 * */
+	class DownloadFileFromURL extends AsyncTask<String, String, String> {
+
+		/**
+		 * Downloading file in background thread
+		 * */
+		@Override
+		protected String doInBackground(String... f_url) {
+			int count;
+			try {
+				URL url = new URL(f_url[0]);
+				String localDir = f_url[1];
+				URLConnection connection = url.openConnection();
+				connection.connect();
+
+				// download the file
+				InputStream input = new BufferedInputStream(url.openStream());
+
+				OutputStream output = cordova.getActivity().getContentResolver().openOutputStream(Uri.parse(localDir));
+
+				byte data[] = new byte[1024];
+
+				long total = 0;
+
+				while ((count = input.read(data)) != -1) {
+					total += count;
+					// writing data to file
+					output.write(data, 0, count);
+				}
+
+				// flushing output
+				output.flush();
+
+				// closing streams
+				output.close();
+				input.close();
+
+			} catch (Exception e) {
+				Log.e("Error: ", e.getMessage());
+			}
+
+			return null;
+		}
+	}
+}

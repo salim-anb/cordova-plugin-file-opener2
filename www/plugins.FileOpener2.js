@@ -32,6 +32,13 @@ FileOpener2.prototype.open = function (fileName, contentType, callbackContext) {
     exec(callbackContext.success || null, callbackContext.error || null, 'FileOpener2', 'open', [fileName, contentType]);
 };
 
+/** only for android */
+FileOpener2.prototype.save = function (fileUrl, contentType, callbackContext) {
+    contentType = contentType || '';
+    callbackContext = callbackContext || {};
+    exec(callbackContext.success || null, callbackContext.error || null, 'FileOpener2', 'save', [fileUrl, contentType]);
+};
+
 FileOpener2.prototype.showOpenWithDialog = function (fileName, contentType, callbackContext) {
     contentType = contentType || '';
     callbackContext = callbackContext || {};
