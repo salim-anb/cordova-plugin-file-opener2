@@ -33,10 +33,10 @@ FileOpener2.prototype.open = function (fileName, contentType, callbackContext) {
 };
 
 /** only for android */
-FileOpener2.prototype.save = function (fileUrl, contentType, callbackContext) {
+FileOpener2.prototype.save = function (fileUrl, filename, contentType, callbackContext) {
     contentType = contentType || '';
     callbackContext = callbackContext || {};
-    exec(callbackContext.success || null, callbackContext.error || null, 'FileOpener2', 'save', [fileUrl, contentType]);
+    exec(callbackContext.success || null, callbackContext.error || null, 'FileOpener2', 'save', [fileUrl, filename, contentType]);
 };
 
 FileOpener2.prototype.showOpenWithDialog = function (fileName, contentType, callbackContext) {

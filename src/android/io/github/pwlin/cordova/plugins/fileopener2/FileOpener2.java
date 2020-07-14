@@ -77,9 +77,10 @@ public class FileOpener2 extends CordovaPlugin {
 		}
 		else if (action.equals("save")){
 			String fileUrl = args.getString(0);
-			String contentType = args.getString(1);
+			String fileName = args.getString(1);
+			String contentType = args.getString(2);
 
-			this._save(fileUrl, contentType, callbackContext);
+			this._save(fileUrl, fileName, contentType, callbackContext);
 		}
 		else if (action.equals("uninstall")) {
 			this._uninstall(args.getString(0), callbackContext);
@@ -105,12 +106,13 @@ public class FileOpener2 extends CordovaPlugin {
 		return true;
 	}
 
-	private void _save(String fileUrl, String contentType, CallbackContext callbackContext) throws JSONException {
+	private void _save(String fileUrl, String fileName, String contentType, CallbackContext callbackContext) throws JSONException {
 
 		this.fileUrl = fileUrl;
 		Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
 		intent.setType(contentType);
 		intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+		intent.putExtra(Intent.EXTRA_TITLE, fileName);
 
 		cordova.getActivity().startActivityForResult(intent, FILE_SAVE_REQUEST_CODE);
 	}
